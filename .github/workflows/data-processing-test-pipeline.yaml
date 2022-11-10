@@ -8,7 +8,7 @@ on:
 
 env:
   GH_PULL_REQUEST_ID: ${{ inputs.GH_PULL_REQUEST_ID }}
-  GH_EVENT_NAME: ${{ inputs.GH_PULL_REQUEST_ID }}
+  GH_EVENT_NAME: ${{ inputs.GH_EVENT_NAME }}
 
 jobs:
   try-this-job:
