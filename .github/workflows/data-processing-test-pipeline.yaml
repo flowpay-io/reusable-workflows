@@ -16,6 +16,8 @@ jobs:
     steps:
       - run: echo ${{ env.GH_PULL_REQUEST_ID }}
 
+      - run: echo ${{ env.GH_EVENT_NAME }}
+
       - name: event_switch
         if: env.GH_EVENT_NAME == 'pull_request'
         run: echo "GH_PULL_REQUEST_ID=$(cut -d'/' -f3 <<< $GITHUB_REF )" >> $GITHUB_ENV
