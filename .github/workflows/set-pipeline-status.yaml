@@ -1,0 +1,26 @@
+on:
+  workflow_call:
+    inputs:
+      repository:
+        type: string
+      pr_id:
+        type: string
+      result:
+        type: string
+
+jobs:
+  set-pr-status-result:
+    name: Change test pipeline status
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+    steps:
+      - name: Set PR Context Status to Success
+        uses: gpuliyar/pr-status-action@v1.0.0
+        with:
+          repository: ${{ inputs.repository }} 
+          pr-number: ${{ inputs.pr_id }}
+          context: Pipeline status
+          state: ${{ inputs.result }}
+          description: Pipeline run ${{ inputs.result }}
