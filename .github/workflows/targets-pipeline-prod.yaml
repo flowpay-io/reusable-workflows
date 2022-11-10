@@ -1,27 +1,20 @@
-# DEV  pipeline.
-# Being triggered on push to DEV branch.
-# Generates Databricks job using pipeline_generator.py
-# Deployment to Databricks DEV workspace
-
-name: Pipeline DEV
-
 on:
   workflow_call:
     inputs:
       DATABRICKS_HOST:
         type: string
-      SEGMENT_NAME:
+      SEGMENT:
         type: string
-    
+
 
 jobs:
-  dev-pipeline:
+  prod-pipeline:
     runs-on: ubuntu-latest
-    name: Generate DEV pipeline
+    name: Generate pipeline
     env:
-      environment: DEV
+      environment: PROD
       DATABRICKS_HOST: ${{ inputs.DATABRICKS_HOST }}
-      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_PAT }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PROD_PAT }} 
     steps: 
       - name: Install Databricks CLI
         uses: microsoft/install-databricks-cli@v1.0.0
@@ -47,32 +40,30 @@ jobs:
         with:
           ssh-private-key: |
             ${{ secrets.SSH_PRIVATE_KEY_UTILS }}
-
       - name: Install packages from private flowpay repo
         run: pip install git+ssh://git@github.com/flowpay-io/flowpaycommon.git
 
       - name: Generate pipeline config file
+        run: python3 ./pipelines/targets_pipeline.py -e ${{ env.environment }} -t ${{ github.head_ref || github.ref_name }}
+      - name: Remove previous pipeline
         run: >
-          python3 ./pipelines/${{ inputs.SEGMENT_NAME }}_pipeline.py \
-           --environment ${{ env.environment }} \
-           --pipe_repo_name ${{ github.event.repository.name }} \
-           --pipe_branch_ref dev
-
+          for job_id in $(databricks jobs list \
+            | grep "targets_${{ inputs.SEGMENT }}" \
+            | awk '{print $1}')
+          do
+              databricks jobs delete --job-id $job_id
+          done
+      
       - name: Remove previous pipeline versions
         run: >
           for job_id in $(databricks jobs list \
-            | grep "${{ github.event.repository.name }}}" \
+            | grep "target_${{ inputs.SEGMENT }}" \
             | awk '{print $1}')
           do
             databricks jobs delete --job-id $job_id
           done
       
-      - name: Generate Pipeline
+      - name: Generate new pipeline
         run: |
           databricks jobs configure --version=2.1
-          databricks jobs create --json-file ./pipelines/${{ env.environment }}_${{ env.SEGMENT_NAME }}.json
-          
-        # databricks jobs reset --job-id 334031028764187 --json-file ./pipelines/${{ env.environment }}_${{ inputs.SEGMENT_NAME }}.json
-       
-
-  
+          databricks jobs create --json-file ./pipelines/${{ env.environment }}_targets.json
