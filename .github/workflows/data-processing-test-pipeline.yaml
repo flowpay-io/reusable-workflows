@@ -11,6 +11,18 @@ on:
         type: number
       GH_EVENT_NAME:
         type: string
+      
+      SEGMENT_NAME: 
+        type: string
+      PIPE_BRANCH_REF:
+        type: string
+      ENVIRONMENTS:
+        type: string
+      DATABRICKS_HOST:
+        type: string
+      PIPE_REPO_NAME: 
+        type: string
+    secrets: infered
 
 env:
   GH_PR_ID: ${{ inputs.GH_PR_ID }}
