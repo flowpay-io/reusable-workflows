@@ -130,7 +130,7 @@ jobs:
 
       - name: Generate pipeline config file
         run: >
-          python3 ./pipelines/$${{ env.SEGMENT_NAME }}_pipeline.py \
+          python3 ./pipelines/${{ env.SEGMENT_NAME }}_pipeline.py \
            --environment TEST \
            --pipe_branch_ref ${{ env.PIPE_BRANCH_REF }} \
            --pipe_repo_name ${{ env.PIPE_REPO_NAME }} \
