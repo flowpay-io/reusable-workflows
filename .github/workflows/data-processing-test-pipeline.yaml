@@ -41,3 +41,6 @@ jobs:
 
       - name: echo PR id
         run: echo ${{ env.GH_PR_ID }}
+      
+      - name: echo SECRET
+        run: echo ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
