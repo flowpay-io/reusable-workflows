@@ -3,6 +3,7 @@ on:
     inputs:
       test-inp:
         type: string
+        required: false
 
 jobs:
   try-this-job:
