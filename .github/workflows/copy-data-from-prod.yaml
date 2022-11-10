@@ -1,0 +1,43 @@
+# Copy raw layer from PROD to TEST/DEV
+# Use of azcopy
+# it updates only changed files or copy new ones (--overwrite=ifSourceNewer parameter)
+
+on:
+  workflow_call:
+    inputs:
+      DATABRICKS_HOST:
+        type: string
+      SEGMENT_NAME:
+        type: string
+
+jobs:
+  copy-data-test:
+    runs-on: ubuntu-latest
+    name: Copy raw data - PROD to TEST
+    steps:
+      - uses: actions/checkout@v3 
+      - name: azcopy-test
+        run: |
+          wget https://aka.ms/downloadazcopy-v10-linux
+          tar -xvf downloadazcopy-v10-linux
+          sudo cp ./azcopy_linux_amd64_*/azcopy /usr/bin/    
+          azcopy copy \
+          "https://flowpaydatalakeprod.blob.core.windows.net/raw${{ secrets.FLOWPAYDATALAKEPROD_RAW_SAS }}" \
+          "https://flowpaydatalaketest.blob.core.windows.net/raw${{ secrets.FLOWPAYDATALAKETEST_RAW_SAS }}" \
+           --recursive=true \
+           --overwrite=ifSourceNewer
+
+  copy-data-dev:
+    runs-on: ubuntu-latest
+    name: Copy raw data - PROD to DEV
+    steps:
+      - name: azcopy-dev
+        run: |
+          wget https://aka.ms/downloadazcopy-v10-linux
+          tar -xvf downloadazcopy-v10-linux
+          sudo cp ./azcopy_linux_amd64_*/azcopy /usr/bin/
+          azcopy copy \
+          "https://flowpaydatalakeprod.blob.core.windows.net/raw${{ secrets.FLOWPAYDATALAKEPROD_RAW_SAS }}" \
+          "https://flowpaydatalakedev.blob.core.windows.net/raw${{ secrets.FLOWPAYDATALAKEDEV_RAW_SAS }}" \
+           --recursive=true \
+           --overwrite=ifSourceNewer

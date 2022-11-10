@@ -1,0 +1,60 @@
+# Uses databricks/run-notebook to run specific action
+# Triggered from TEST/PROD, but the notebook running on DEV (this is the location of mlflow registry)
+# Uses 'pipelines/notebooks/export_ml_artifacts.py' notebook to export mlflow artifacts to shared storage
+
+name: MLFlow artifacts export
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+      segment: 
+        type: string
+      databricks-host:
+        type: string
+
+jobs:
+  export-artifacts:
+    if: |
+      inputs.environment == 'PROD' ||
+      inputs.environment == 'TEST'
+    runs-on: ubuntu-latest     
+    steps: 
+      - name: Show environment
+        run: echo ${{ inputs.environment }}
+      - name: Generate AAD Token
+        run: |
+          echo "DATABRICKS_TOKEN=$(curl -X POST -H 'Content-Type: application/x-www-form-urlencoded' \
+          https://login.microsoftonline.com/${{ secrets.AZURE_SERVICE_PRINCIPLE_TENANT_ID }}/oauth2/v2.0/token \
+          -d 'client_id=${{ secrets.AZURE_SERVICE_PRINCIPLE_APPLICATION_ID }}' \
+          -d 'grant_type=client_credentials' \
+          -d 'scope=2ff814a6-3304-4ab8-85cb-cd0e6f879c1d%2F.default' \
+          -d 'client_secret=${{ secrets.AZURE_SERVICE_PRINCIPLE_CLIENT_SECRET }}' |  jq -r  '.access_token')" >> $GITHUB_ENV
+      - name: Repo checkout
+        uses: actions/checkout@v3 
+      - name: Export MLFlow artifacts DEV -> TEST/PROD
+        uses: databricks/run-notebook@v0
+        with:
+          local-notebook-path: pipelines/notebooks/export_ml_artifacts.py
+          databricks-host: ${{ inputs.databricks-host }}
+          databricks-token: ${{ env.DATABRICKS_TOKEN }}
+          git-commit: ${{ github.sha }}
+          notebook-params-json: >
+            { 
+              "environment": "${{ inputs.environment }}",
+              "segment": "${{ inputs.segment }}"
+            }
+          new-cluster-json: >
+            {
+              "num_workers": 0,
+              "spark_version": "10.4.x-scala2.12",
+              "node_type_id": "Standard_F4"
+            }
+          libraries-json: > 
+            [
+              {"pypi": {"package": "mlflow"}},
+              {"pypi": {"package": "git+https://${{ secrets.CICD_REPO_ACCESS_TOKEN }}@github.com/flowpay-io/flowpaycommon.git"}},
+              { "pypi": {"package": "mlflow_export_import"} }
+            ]
+          

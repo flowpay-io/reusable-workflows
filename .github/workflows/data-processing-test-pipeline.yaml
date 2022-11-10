@@ -21,7 +21,7 @@ on:
         type: string
 
 env:
-  PR_REPO_FULLNAME:
+  PR_REPO_FULLNAME: ${{ inputs.PR_REPO_FULLNAME }}
   GH_PR_ID: ${{ inputs.GH_PR_ID }}
   MODULES_RELEASE: ${{ inputs.MODULES_RELEASE }}
   WF_RUN_ID: ${{ inputs.WF_RUN_ID }}
@@ -130,8 +130,8 @@ jobs:
 
       - name: Generate pipeline config file
         run: >
-          python3 ./pipelines/hospitality_pipeline.py \
-           --environment ${{ env.ENVIRONMENT }} \
+          python3 ./pipelines/$${{ env.SEGMENT_NAME }}_pipeline.py \
+           --environment TEST \
            --pipe_branch_ref ${{ env.PIPE_BRANCH_REF }} \
            --pipe_repo_name ${{ env.PIPE_REPO_NAME }} \
            --flowpaycommon_version ${{ env.MODULES_RELEASE }} \
@@ -140,7 +140,7 @@ jobs:
       - name: Generate pipeline 
         run: |
           databricks jobs configure --version=2.1
-          echo "JOB_ID=$(databricks jobs create --json-file ./pipelines/${{ env.ENVIRONMENT }}_hospitality.json | jq -r '.job_id')" >> $GITHUB_ENV
+          echo "JOB_ID=$(databricks jobs create --json-file ./pipelines/TEST_${{ env.SEGMENT_NAME }}.json | jq -r '.job_id')" >> $GITHUB_ENV
       - name: Run pipeline
         run: databricks jobs run-now --job-id ${{ env.JOB_ID }}
       
@@ -169,4 +169,4 @@ jobs:
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: token ${{ secrets.CICD_REPO_ACCESS_TOKEN }}" \
           https://api.github.com/repos/${{ env.PR_REPO_FULLNAME }}/actions/workflows/export-mlflow-artifacts.yaml/dispatches \
-           -d '{"ref":"${{ env.PIPE_BRANCH_REF }}", "inputs":{"environment":"${{ env.ENVIRONMENT }}", "segment":"${{ env.SEGMENT_NAME }}"}}'
+           -d '{"ref":"${{ env.PIPE_BRANCH_REF }}", "inputs":{"environment":"TEST", "segment":"${{ env.SEGMENT_NAME }}"}}'

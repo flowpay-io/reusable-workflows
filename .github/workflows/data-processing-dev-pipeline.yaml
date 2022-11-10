@@ -1,0 +1,50 @@
+# DEV  pipeline.
+# Being triggered on push to DEV branch.
+# Generates Databricks job using pipeline_generator.py
+# Deployment to Databricks DEV workspace
+
+name: Pipeline DEV
+
+on:
+  workflow_call:
+    inputs:
+      DATABRICKS_HOST:
+        type: string
+      SEGMENT_NAME:
+        type: string
+    
+
+jobs:
+  dev-pipeline:
+    runs-on: ubuntu-latest
+    name: Generate DEV pipeline
+    env:
+      environment: DEV
+      DATABRICKS_HOST: ${{ inputs.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_PAT }}
+    steps: 
+      - name: Install Databricks CLI
+        uses: microsoft/install-databricks-cli@v1.0.0
+      - uses: actions/checkout@v3
+
+      - name: Set ssh for private flowpay repo
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: |
+            ${{ secrets.SSH_PRIVATE_KEY_UTILS }}
+      - name: Install packages from private flowpay repo
+        run: pip install git+ssh://git@github.com/flowpay-io/flowpaycommon.git
+
+      - name: Generate pipeline config file
+        run: >
+          python3 ./pipelines/${{ inputs.SEGMENT_NAME }}_pipeline.py \
+           --environment ${{ env.environment }} \
+           --pipe_repo_name ${{ github.event.repository.name }} \
+           --pipe_branch_ref dev
+      - name: Generate Pipeline
+        run: |
+          databricks jobs configure --version=2.1
+          databricks jobs reset --job-id 334031028764187 --json-file ./pipelines/${{ env.environment }}_${{ inputs.SEGMENT_NAME }}.json
+       
+
+  

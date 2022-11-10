@@ -1,0 +1,56 @@
+# PROD  pipeline.
+# Being triggered on creating a release on master branch with specific tag.
+# Generates Databricks job using pipeline_generator.py
+# Deployment to Databricks PROD workspace
+# Export of mlflow artifacts to shared location
+
+name: Pipeline PROD
+
+on:
+  workflow_call:
+    inputs:
+      DATABRICKS_HOST:
+        type: string
+      SEGMENT_NAME:
+        type: string
+
+jobs:
+  prod-pipeline:
+    runs-on: ubuntu-latest
+    name: Generate PROD pipeline
+    env:
+      environment: PROD
+      DATABRICKS_HOST: ${{ inputs.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PROD_PAT }} 
+    steps: 
+      - name: Install Databricks CLI
+        uses: microsoft/install-databricks-cli@v1.0.0
+      - uses: actions/checkout@v3
+
+      - name: Set ssh for private flowpay repo
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: |
+            ${{ secrets.SSH_PRIVATE_KEY_UTILS }}
+
+
+      - name: Install packages from private flowpay repo
+        run: |
+          pip install git+ssh://git@github.com/flowpay-io/flowpaycommon.git
+
+      - name: Generate pipeline config file
+        run: python3 ./pipelines/${{ inputs.SEGMENT_NAME }}_pipeline.py --environment ${{ env.environment }}  --tag ${{ github.head_ref || github.ref_name }} --pipe_repo_name ${{ github.event.repository.name }}
+      - name: Generate Pipeline
+        run: |
+          databricks jobs configure --version=2.1
+          databricks jobs reset --job-id 12584266363486 --json-file ./pipelines/${{ env.environment }}_${{ inputs.SEGMENT_NAME }}.json
+      - name: Get mlflow artifacts
+        run: |
+          echo "Artifacts version from ${{ github.head_ref || github.ref_name }}"
+          curl -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: token ${{ secrets.CICD_REPO_ACCESS_TOKEN }}" \
+          https://api.github.com/repos/${{ github.event.repository.name }}/actions/workflows/export-mlflow-artifacts.yaml/dispatches \
+           -d '{"ref":"${{ github.head_ref || github.ref_name }}", "inputs":{"environment":"${{ env.environment }}", "segment":"${{ inputs.SEGMENT_NAME }}"}}'
+
+  

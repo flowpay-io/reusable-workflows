@@ -1,0 +1,20 @@
+# Triggered on every closed PR (when it is merged)
+# Uses 'pipelines/scripts/delete_test_pipes.py' notebook to remove all job (test pipeline) results (tables) created when running test for specific PR
+
+name: Delete PR test pipeline results
+
+on:
+  workflow_call:
+
+jobs:
+  delete-test-pipe-results:
+    runs-on: ubuntu-latest     
+    steps: 
+      - name: Repo checkout
+        uses: actions/checkout@v3 
+      - name: Delete test results of ${{ github.head_ref || github.ref_name }} PR
+        run: |
+          pip install azure-storage-file-datalake
+          python3 ./pipelines/scripts/delete_test_results.py \
+           --dl_sas_token "${{ secrets.FLOWPAYDATALAKETEST_SAS }}" \
+           --branch_ref "${{ github.head_ref || github.ref_name }}"
