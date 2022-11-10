@@ -33,7 +33,7 @@ env:
   ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
   DATABRICKS_HOST: ${{ inputs.DATABRICKS_HOST }}
   PIPE_REPO_NAME: ${{ inputs.PIPE_REPO_NAME }}
-
+GITHUB_TOKEN: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
 
 jobs:
