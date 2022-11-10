@@ -1,0 +1,11 @@
+on:
+  workflow_call:
+    inputs:
+      test-inp:
+        type: string
+
+jobs:
+  try-this-job:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ${{ inputs.test-inp }}
