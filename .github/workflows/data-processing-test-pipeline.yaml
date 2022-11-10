@@ -2,7 +2,7 @@ on:
   workflow_call:
     inputs:
       test-inp:
-        type: string
+        # type: string
         required: false
 
 jobs:
