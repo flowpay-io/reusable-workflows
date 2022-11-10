@@ -9,8 +9,6 @@ on:
         type: string
       WF_RUN_ID: 
         type: string
-      GH_EVENT_NAME:
-        type: string
       SEGMENT_NAME: 
         type: string
       PIPE_BRANCH_REF:
@@ -27,7 +25,6 @@ env:
   GH_PR_ID: ${{ inputs.GH_PR_ID }}
   MODULES_RELEASE: ${{ inputs.MODULES_RELEASE }}
   WF_RUN_ID: ${{ inputs.WF_RUN_ID }}
-  GH_EVENT_NAME: ${{ inputs.GH_EVENT_NAME }}
   SEGMENT_NAME: ${{ inputs.SEGMENT_NAME }}
   PIPE_BRANCH_REF: ${{ inputs.PIPE_BRANCH_REF }}
   ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
@@ -47,6 +44,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: echo "GH_PR_ID=$(cut -d'/' -f3 <<< $GITHUB_REF )" >> $GITHUB_ENV
       
+
       - name: Save "repository of opened PR" FULLname 
         if: github.event_name == 'pull_request'
         run: echo "PR_REPO_FULLNAME=${{ github.event.pull_request.head.repo.full_name }}" >> $GITHUB_ENV
@@ -100,7 +98,7 @@ jobs:
           cp -r ./flowpaycommon/flowpaycommon/pipelines/. ./pipelines/
 
       - name: Cancel any PR test runs (WF Dispatch trigger event)
-        if: env.GH_EVENT_NAME == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch'
         run: >
           for job_id in $(databricks runs list \
             | grep ${{ env.MODULES_RELEASE }} \
@@ -110,7 +108,7 @@ jobs:
           done
     
       - name: Cancel any PR test runs (PR trigger event)
-        if: env.GH_EVENT_NAME == 'pull_request'
+        if: github.event_name == 'pull_request'
         run: >
           for job_id in $(databricks runs list \
             | grep ${{ env.PIPE_BRANCH_REF }} \
