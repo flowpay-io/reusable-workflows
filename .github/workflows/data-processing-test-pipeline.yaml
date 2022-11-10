@@ -3,12 +3,22 @@ on:
     inputs:
       GH_PULL_REQUEST_ID:
         type: number
+      GH_EVENT_NAME:
+        type: string
 
 env:
   GH_PULL_REQUEST_ID: ${{ inputs.GH_PULL_REQUEST_ID }}
+  GH_EVENT_NAME: ${{ inputs.GH_PULL_REQUEST_ID }}
 
 jobs:
   try-this-job:
     runs-on: ubuntu-latest
     steps:
-      - run: echo ${{ env.GH_PULL_REQUEST_ID-inp }}
+      - run: echo ${{ env.GH_PULL_REQUEST_ID }}
+
+      - name: event_switch
+        if: env.GH_EVENT_NAME == 'pull_request'
+        run: echo "GH_PULL_REQUEST_ID=$(cut -d'/' -f3 <<< $GITHUB_REF )" >> $GITHUB_ENV
+
+      - name: echo PR id
+        run: echo ${{ env.GH_PULL_REQUEST_ID }}
