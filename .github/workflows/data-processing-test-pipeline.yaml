@@ -2,7 +2,7 @@ on:
   workflow_call:
     inputs:
       GH_PULL_REQUEST_ID:
-        type: integer
+        type: number
 
 env:
   GH_PULL_REQUEST_ID: ${{ inputs.GH_PULL_REQUEST_ID }}
