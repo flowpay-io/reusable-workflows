@@ -1,26 +1,32 @@
 on:
   workflow_call:
     inputs:
-      GH_PULL_REQUEST_ID:
+      PR_REPO_FULLNAME:
+        type: string
+      GH_PR_ID:
+        type: number
+      MODULES_RELEASE:
+        type: string
+      WF_RUN_ID: 
         type: number
       GH_EVENT_NAME:
         type: string
 
 env:
-  GH_PULL_REQUEST_ID: ${{ inputs.GH_PULL_REQUEST_ID }}
+  GH_PR_ID: ${{ inputs.GH_PR_ID }}
   GH_EVENT_NAME: ${{ inputs.GH_EVENT_NAME }}
 
 jobs:
   try-this-job:
     runs-on: ubuntu-latest
     steps:
-      - run: echo ${{ env.GH_PULL_REQUEST_ID }}
+      - run: echo ${{ env.GH_PR_ID }}
 
       - run: echo ${{ env.GH_EVENT_NAME }}
 
       - name: event_switch
         if: env.GH_EVENT_NAME == 'pull_request'
-        run: echo "GH_PULL_REQUEST_ID=$(cut -d'/' -f3 <<< $GITHUB_REF )" >> $GITHUB_ENV
+        run: echo "GH_PR_ID=$(cut -d'/' -f3 <<< $GITHUB_REF )" >> $GITHUB_ENV
 
       - name: echo PR id
-        run: echo ${{ env.GH_PULL_REQUEST_ID }}
+        run: echo ${{ env.GH_PR_ID }}
