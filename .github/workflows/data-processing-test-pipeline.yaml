@@ -4,11 +4,11 @@ on:
       PR_REPO_FULLNAME:
         type: string
       GH_PR_ID:
-        type: number
+        type: string
       MODULES_RELEASE:
         type: string
       WF_RUN_ID: 
-        type: number
+        type: string
       GH_EVENT_NAME:
         type: string
       
