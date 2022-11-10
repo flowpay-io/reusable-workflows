@@ -22,7 +22,6 @@ on:
         type: string
       PIPE_REPO_NAME: 
         type: string
-    secrets: inherit
 
 env:
   GH_PR_ID: ${{ inputs.GH_PR_ID }}
