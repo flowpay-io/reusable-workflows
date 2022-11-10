@@ -11,7 +11,6 @@ on:
         type: string
       GH_EVENT_NAME:
         type: string
-      
       SEGMENT_NAME: 
         type: string
       PIPE_BRANCH_REF:
@@ -24,23 +23,152 @@ on:
         type: string
 
 env:
+  PR_REPO_FULLNAME:
   GH_PR_ID: ${{ inputs.GH_PR_ID }}
+  MODULES_RELEASE: ${{ inputs.MODULES_RELEASE }}
+  WF_RUN_ID: ${{ inputs.WF_RUN_ID }}
   GH_EVENT_NAME: ${{ inputs.GH_EVENT_NAME }}
+  SEGMENT_NAME: ${{ inputs.SEGMENT_NAME }}
+  PIPE_BRANCH_REF: ${{ inputs.PIPE_BRANCH_REF }}
+  ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
+  DATABRICKS_HOST: ${{ inputs.DATABRICKS_HOST }}
+  PIPE_REPO_NAME: ${{ inputs.PIPE_REPO_NAME }}
+
+
 
 jobs:
-  try-this-job:
+  test-pipeline:
+    name: Run test and monitor
     runs-on: ubuntu-latest
     steps:
-      - run: echo ${{ env.GH_PR_ID }}
-
-      - run: echo ${{ env.GH_EVENT_NAME }}
-
-      - name: event_switch
+      
+      # SET ENV VARS IF TRIGGER IS PR EVENT
+      - name: Save repo "pr_id" 
         if: env.GH_EVENT_NAME == 'pull_request'
         run: echo "GH_PR_ID=$(cut -d'/' -f3 <<< $GITHUB_REF )" >> $GITHUB_ENV
-
-      - name: echo PR id
-        run: echo ${{ env.GH_PR_ID }}
       
-      - name: echo SECRET
-        run: echo ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+      - name: Save "repository of opened PR" FULLname 
+        if: env.GH_EVENT_NAME == 'pull_request'
+        run: echo "PR_REPO_FULLNAME=${{ github.event.pull_request.head.repo.full_name }}" >> $GITHUB_ENV
+
+      - name: Save "pipe_branch_ref" 
+        if: env.GH_EVENT_NAME == 'pull_request'
+        run: echo "PIPE_BRANCH_REF=${{ github.head_ref || github.ref_name }}" >> $GITHUB_ENV
+
+      - name: Get version of common modules release
+        if: env.GH_EVENT_NAME == 'pull_request'
+        run: > 
+          echo "MODULES_RELEASE=$(curl -H 'Accept: application/vnd.github+json' \
+            -H 'Authorization: Bearer ${{ secrets.CICD_REPO_ACCESS_TOKEN }}' \
+            https://api.github.com/repos/flowpay-io/flowpaycommon/releases/latest | jq -r '.tag_name')" >> $GITHUB_ENV
+
+      - name: Save workflow run ID "wf_run_id"
+        if: env.GH_EVENT_NAME == 'pull_request'
+        run: echo "WF_RUN_ID=${{ github.run_id }}" >> $GITHUB_ENV
+
+
+      # SET STATUS PENDING
+      - name: Set PR Context Status to PENDING
+        uses: gpuliyar/pr-status-action@v1.0.0
+        with:
+          repository: ${{ env.PR_REPO_FULLNAME }}
+          pr-number: ${{ env.GH_PR_ID }}
+          context: Pipeline status
+          state: pending
+          description: Waiting to be resolved.
+
+
+      # RUN TEST PIPE
+      - name: Install Databricks CLI
+        uses: microsoft/install-databricks-cli@v1.0.0
+      
+      - name: Checkout current repo
+        uses: actions/checkout@v3
+      
+      - name: Create location for flowpaycommon
+        run: mkdir flowpaycommon
+
+      - name: Checkout flowpaycommon repo
+        uses: actions/checkout@v3
+        with:
+          repository: flowpay-io/flowpaycommon
+          token: ${{ env.GITHUB_TOKEN }}
+          path: ./flowpaycommon
+
+      - name: Copy files from flowpaycommon
+        run: |
+          cp -r ./flowpaycommon/flowpaycommon/pipelines/. ./pipelines/
+
+      - name: Cancel any PR test runs (WF Dispatch trigger event)
+        if: env.GH_EVENT_NAME == 'workflow_dispatch'
+        run: >
+          for job_id in $(databricks runs list \
+            | grep ${{ env.MODULES_RELEASE }} \
+            | awk '{print $1}')
+          do
+              databricks runs cancel --run-id $job_id
+          done
+    
+      - name: Cancel any PR test runs (PR trigger event)
+        if: env.GH_EVENT_NAME == 'pull_request'
+        run: >
+          for job_id in $(databricks runs list \
+            | grep ${{ env.PIPE_BRANCH_REF }} \
+            | awk '{print $1}')
+          do
+              databricks runs cancel --run-id $job_id
+          done
+
+      - name: Set ssh for private flowpay repo
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: |
+            ${{ secrets.SSH_PRIVATE_KEY_UTILS }}
+
+      - name: Install packages from private flowpay repo
+        run: pip install git+ssh://git@github.com/flowpay-io/flowpaycommon.git@${{ env.MODULES_RELEASE }}
+
+      - run: pip freeze
+
+      - name: Generate pipeline config file
+        run: >
+          python3 ./pipelines/hospitality_pipeline.py \
+           --environment ${{ env.ENVIRONMENT }} \
+           --pipe_branch_ref ${{ env.PIPE_BRANCH_REF }} \
+           --pipe_repo_name ${{ env.PIPE_REPO_NAME }} \
+           --flowpaycommon_version ${{ env.MODULES_RELEASE }} \
+           --wf_run_id ${{ github.run_id }} \
+           --pr_repo_fullname ${{ env.PR_REPO_FULLNAME }}
+      - name: Generate pipeline 
+        run: |
+          databricks jobs configure --version=2.1
+          echo "JOB_ID=$(databricks jobs create --json-file ./pipelines/${{ env.ENVIRONMENT }}_hospitality.json | jq -r '.job_id')" >> $GITHUB_ENV
+      - name: Run pipeline
+        run: databricks jobs run-now --job-id ${{ env.JOB_ID }}
+      
+      - name: Generate monitor config file
+        run: > 
+          python3 ./pipelines/monitoring_test_pipeline.py \
+           --pr_id ${{ env.GH_PR_ID }} \
+           --github_pat ${{ secrets.CICD_REPO_ACCESS_TOKEN }} \
+           --pipe_branch_ref ${{ env.PIPE_BRANCH_REF }} \
+           --job_id ${{ env.JOB_ID }} \
+           --databricks_pat ${{ env.DATABRICKS_TOKEN }} \
+           --pipe_repo_name ${{ env.PIPE_REPO_NAME }} \
+           --flowpaycommon_version ${{ env.MODULES_RELEASE }} \
+           --wf_run_id ${{ github.run_id }} \
+           --pr_repo_fullname ${{ env.PR_REPO_FULLNAME }}
+      - name: Generate monitor pipeline
+        run: >
+          echo "JOB_ID_MONITOR=$(databricks jobs create --json-file ./pipelines/pipeline_testenv_monitor.json | jq -r '.job_id')" >> $GITHUB_ENV
+      - name: Run monitor pipeline
+        run: databricks jobs run-now --job-id ${{ env.JOB_ID_MONITOR }}
+      
+      - name: Get mlflow artifacts
+        run: |
+          echo "Artifacts version from ${{ env.PIPE_BRANCH_REF }}"
+          curl -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: token ${{ secrets.CICD_REPO_ACCESS_TOKEN }}" \
+          https://api.github.com/repos/${{ env.PR_REPO_FULLNAME }}/actions/workflows/export-mlflow-artifacts.yaml/dispatches \
+           -d '{"ref":"${{ env.PIPE_BRANCH_REF }}", "inputs":{"environment":"${{ env.ENVIRONMENT }}", "segment":"${{ env.SEGMENT_NAME }}"}}'
