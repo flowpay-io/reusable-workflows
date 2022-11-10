@@ -16,7 +16,7 @@ on:
         type: string
       PIPE_BRANCH_REF:
         type: string
-      ENVIRONMENTS:
+      ENVIRONMENT:
         type: string
       DATABRICKS_HOST:
         type: string
