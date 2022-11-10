@@ -1,12 +1,14 @@
 on:
   workflow_call:
     inputs:
-      test-inp:
-        type: string
-        # required: false
+      GH_PULL_REQUEST_ID:
+        type: integer
+
+env:
+  GH_PULL_REQUEST_ID: ${{ inputs.GH_PULL_REQUEST_ID }}
 
 jobs:
   try-this-job:
     runs-on: ubuntu-latest
     steps:
-      - run: echo ${{ inputs.test-inp }}
+      - run: echo ${{ env.GH_PULL_REQUEST_ID-inp }}
