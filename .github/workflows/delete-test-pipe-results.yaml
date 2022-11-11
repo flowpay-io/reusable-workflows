@@ -10,8 +10,24 @@ jobs:
   delete-test-pipe-results:
     runs-on: ubuntu-latest     
     steps: 
+      
       - name: Repo checkout
         uses: actions/checkout@v3 
+
+      - name: Create location for flowpaycommon
+        run: mkdir flowpaycommon
+
+      - name: Checkout flowpaycommon repo
+        uses: actions/checkout@v3
+        with:
+          repository: flowpay-io/flowpaycommon
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+          path: ./flowpaycommon
+
+      - name: Copy files from flowpaycommon
+        run: |
+          cp -r ./flowpaycommon/flowpaycommon/pipelines/. ./pipelines/
+
       - name: Delete test results of ${{ github.head_ref || github.ref_name }} PR
         run: |
           pip install azure-storage-file-datalake
