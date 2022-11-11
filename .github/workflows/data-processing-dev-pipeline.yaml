@@ -70,7 +70,7 @@ jobs:
       - name: Generate Pipeline
         run: |
           databricks jobs configure --version=2.1
-          databricks jobs create --json-file ./pipelines/${{ env.environment }}_${{ env.SEGMENT_NAME }}.json
+          databricks jobs create --json-file ./pipelines/${{ env.environment }}_${{ inputs.SEGMENT_NAME }}.json
           
         # databricks jobs reset --job-id 334031028764187 --json-file ./pipelines/${{ env.environment }}_${{ inputs.SEGMENT_NAME }}.json
        
