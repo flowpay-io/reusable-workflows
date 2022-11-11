@@ -44,11 +44,7 @@ jobs:
         run: pip install git+ssh://git@github.com/flowpay-io/flowpaycommon.git
 
       - name: Generate pipeline config file
-        run: >
-          python3 ./pipelines/targets_pipeline.py \ 
-           --environment ${{ env.environment }}
-           --pipe_repo_name ${{ github.event.repository.name }} \
-           --pipe_branch_ref dev
+        run: python3 ./pipelines/targets_pipeline.py --environment ${{ env.environment }} --pipe_repo_name ${{ github.event.repository.name }} --pipe_branch_ref dev
       - name: Remove previous pipeline
         run: >
           for job_id in $(databricks jobs list \
