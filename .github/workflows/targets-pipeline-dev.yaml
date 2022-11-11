@@ -14,7 +14,7 @@ jobs:
     env:
       environment: DEV
       DATABRICKS_HOST: ${{ inputs.DATABRICKS_HOST }}
-      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PROD_PAT }} 
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_PAT }} 
     steps: 
       - name: Install Databricks CLI
         uses: microsoft/install-databricks-cli@v1.0.0
