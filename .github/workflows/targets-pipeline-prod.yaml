@@ -45,6 +45,7 @@ jobs:
 
       - name: Generate pipeline config file
         run: python3 ./pipelines/targets_pipeline.py -e ${{ env.environment }} -t ${{ github.head_ref || github.ref_name }} --pipe_repo_name ${{ github.event.repository.name }}
+      
       - name: Remove previous pipeline
         run: >
           for job_id in $(databricks jobs list \

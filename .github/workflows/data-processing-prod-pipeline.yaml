@@ -57,7 +57,7 @@ jobs:
       - name: Remove previous pipeline versions
         run: >
           for job_id in $(databricks jobs list \
-            | grep "${{ github.event.repository.name }}}" \
+            | grep "${{ github.event.repository.name }}" \
             | awk '{print $1}')
           do
             databricks jobs delete --job-id $job_id
