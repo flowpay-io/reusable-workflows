@@ -53,12 +53,12 @@ jobs:
         if: github.event_name == 'pull_request'
         run: echo "PIPE_BRANCH_REF=${{ github.head_ref || github.ref_name }}" >> $GITHUB_ENV
 
-      - name: Get version of common modules release
-        if: github.event_name == 'pull_request'
-        run: > 
-          echo "MODULES_RELEASE=$(curl -H 'Accept: application/vnd.github+json' \
-            -H 'Authorization: Bearer ${{ secrets.CICD_REPO_ACCESS_TOKEN }}' \
-            https://api.github.com/repos/flowpay-io/flowpaycommon/releases/latest | jq -r '.tag_name')" >> $GITHUB_ENV
+      # - name: Get version of common modules release
+      #   if: github.event_name == 'pull_request'
+      #   run: > 
+      #     echo "MODULES_RELEASE=$(curl -H 'Accept: application/vnd.github+json' \
+      #       -H 'Authorization: Bearer ${{ secrets.CICD_REPO_ACCESS_TOKEN }}' \
+      #       https://api.github.com/repos/flowpay-io/flowpaycommon/releases/latest | jq -r '.tag_name')" >> $GITHUB_ENV
 
       - name: Save workflow run ID "wf_run_id"
         if: github.event_name == 'pull_request'
