@@ -8,6 +8,8 @@ name: Pipeline DEV
 on:
   workflow_call:
     inputs:
+      MODULES_RELEASE:
+        type: string
       DATABRICKS_HOST:
         type: string
       SEGMENT_NAME:
@@ -22,6 +24,7 @@ jobs:
       environment: DEV
       DATABRICKS_HOST: ${{ inputs.DATABRICKS_HOST }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_PAT }}
+      MODULES_RELEASE: ${{ inputs.MODULES_RELEASE }}
     steps: 
       - name: Install Databricks CLI
         uses: microsoft/install-databricks-cli@v1.0.0
@@ -49,14 +52,15 @@ jobs:
             ${{ secrets.SSH_PRIVATE_KEY_UTILS }}
 
       - name: Install packages from private flowpay repo
-        run: pip install git+ssh://git@github.com/flowpay-io/flowpaycommon.git
+        run: pip install git+ssh://git@github.com/flowpay-io/flowpaycommon.git@${{ env.MODULES_RELEASE }}
 
       - name: Generate pipeline config file
         run: >
           python3 ./pipelines/${{ inputs.SEGMENT_NAME }}_pipeline.py \
            --environment ${{ env.environment }} \
            --pipe_repo_name ${{ github.event.repository.name }} \
-           --pipe_branch_ref dev
+           --pipe_branch_ref dev \
+           --flowpaycommon_version ${{ env.MODULES_RELEASE }} 
 
       - name: Remove previous pipeline versions
         run: >
