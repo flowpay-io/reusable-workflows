@@ -59,7 +59,7 @@ jobs:
           python3 ./pipelines/${{ inputs.SEGMENT_NAME }}_pipeline.py \
            --environment ${{ env.environment }} \
            --pipe_repo_name ${{ github.event.repository.name }} \
-           --pipe_branch_ref dev \
+           --pipe_branch_ref master \
            --flowpaycommon_version ${{ env.MODULES_RELEASE }} 
 
       - name: Remove previous pipeline versions
