@@ -79,7 +79,7 @@ jobs:
           curl -X POST \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: token ${{ secrets.CICD_REPO_ACCESS_TOKEN }}" \
-          https://api.github.com/repos/${{ github.event.repository.name }}/actions/workflows/export-mlflow-artifacts.yaml/dispatches \
+          https://api.github.com/repos/flowpay-io/${{ github.event.repository.name }}/actions/workflows/export-mlflow-artifacts.yaml/dispatches \
            -d '{"ref":"${{ github.head_ref || github.ref_name }}", "inputs":{"environment":"${{ env.environment }}", "segment":"${{ inputs.SEGMENT_NAME }}"}}'
 
   
