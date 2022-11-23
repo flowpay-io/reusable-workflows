@@ -85,6 +85,7 @@ jobs:
           repository: flowpay-io/flowpaycommon
           token: ${{ env.GITHUB_TOKEN }}
           path: ./flowpaycommon
+          ref: ${{ env.MODULES_RELEASE }}
 
       - name: Copy files from flowpaycommon
         run: |
