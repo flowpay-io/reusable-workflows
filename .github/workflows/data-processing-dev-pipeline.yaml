@@ -40,6 +40,7 @@ jobs:
           repository: flowpay-io/flowpaycommon
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
           path: ./flowpaycommon
+          ref: ${{ env.MODULES_RELEASE }}
 
       - name: Copy files from flowpaycommon
         run: |
